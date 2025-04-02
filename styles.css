@@ -166,6 +166,20 @@ body {
     padding-bottom: 10px;
 }
 
+.my-bookmark-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: black;
+    border: none;
+    cursor: pointer;
+}
+
+.my-bookmark-btn img {
+    width: 20px;
+    height: 20px;
+}
+
 /* Responsive adjustment */
 @media (max-width: 360px) {
     .container {
