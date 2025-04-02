@@ -19,7 +19,7 @@ body {
     background-color: var(--background);
 }
 
-.container {
+.ytb-container {
     width: 320px;
     color: var(--text-color);
     box-shadow: 0 4px 12px var(--shadow-color);
@@ -27,7 +27,7 @@ body {
     overflow: hidden;
 }
 
-.title {
+.ytb-title {
     font-size: 16px;
     font-weight: 600;
     padding: 16px;
@@ -37,48 +37,33 @@ body {
     letter-spacing: 0.5px;
 }
 
-.textbox {
-    width: calc(100% - 24px);
-    font-size: 14px;
-    margin: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    transition: all var(--transition-speed) ease;
-}
 
-.textbox:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(6, 95, 212, 0.2);
-}
-
-.bookmarks {
+.ytb-bookmarks {
     margin: 0;
     padding: 12px;
     max-height: 350px;
     overflow-y: auto;
 }
 
-.bookmarks::-webkit-scrollbar {
+.ytb-bookmarks::-webkit-scrollbar {
     width: 6px;
 }
 
-.bookmarks::-webkit-scrollbar-track {
+.ytb-bookmarks::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 10px;
 }
 
-.bookmarks::-webkit-scrollbar-thumb {
+.ytb-bookmarks::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 10px;
 }
 
-.bookmarks::-webkit-scrollbar-thumb:hover {
+.ytb-bookmarks::-webkit-scrollbar-thumb:hover {
     background: #a1a1a1;
 }
 
-.bookmark {
+.ytb-bookmark {
     display: flex;
     align-items: center;
     border: none;
@@ -90,12 +75,12 @@ body {
     box-shadow: 0 1px 3px var(--shadow-color);
 }
 
-.bookmark:hover {
+.ytb-bookmark:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 6px var(--shadow-color);
 }
 
-.bookmark-title {
+.ytb-bookmark-title {
     flex-grow: 1;
     font-size: 14px;
     color: var(--text-color);
@@ -106,12 +91,12 @@ body {
     text-overflow: ellipsis;
 }
 
-.bookmark-controls {
+.ytb-bookmark-controls {
     display: flex;
     align-items: center;
 }
 
-.bookmark-controls img {
+.ytb-bookmark-controls img {
     width: 20px;
     height: 20px;
     margin: 0 6px;
@@ -166,18 +151,33 @@ body {
     padding-bottom: 10px;
 }
 
-.my-bookmark-btn {
+.ytb-my-bookmark-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: black;
+    background: transparent;
     border: none;
     cursor: pointer;
 }
 
-.my-bookmark-btn img {
+.ytb-my-bookmark-btn img {
     width: 20px;
     height: 20px;
+}
+
+.ytb-edit-btn {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+.ytb-edit-btn:hover {
+    background-color: #45a049;
 }
 
 /* Responsive adjustment */

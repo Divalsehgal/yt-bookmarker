@@ -2,15 +2,15 @@
   "name": "My YT Bookmarks",
   "version": "0.1.0",
   "description": "Saving timestamps in YT videos",
-  "permissions": ["storage", "tabs"],  // Storage to save bookmarks and tabs to access the current video
-  "host_permissions": ["https://*.youtube.com/*"],  // Permissions for YouTube domain
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://*.youtube.com/*"],
   "background": {
-    "service_worker": "background.js"  // Service worker for background tasks
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://*.youtube.com/*"],  // Matches all YouTube pages
-      "js": ["content.js"],  // The script that interacts with the YouTube DOM
+      "matches": ["https://*.youtube.com/*"],
+      "js": ["content.js"],
       "css": ["styles.css"]
     }
   ],
@@ -22,17 +22,17 @@
         "assets/delete.png",
         "assets/save.png"
       ],
-      "matches": ["https://*.youtube.com/*"]  // Allows these resources to be accessed by content scripts
+      "matches": ["https://*.youtube.com/*"]
     }
   ],
   "action": {
     "default_icon": {
-      "16": "assets/ext-icon.png",  // 16x16 icon for the extension
-      "24": "assets/ext-icon.png",  // 24x24 icon for the extension
-      "32": "assets/ext-icon.png"   // 32x32 icon for the extension
+      "16": "assets/ext-icon.png",
+      "24": "assets/ext-icon.png",
+      "32": "assets/ext-icon.png"
     },
-    "default_title": "My YT Bookmarks",  // Title when you hover over the extension icon
-    "default_popup": "popup.html"  // Popup shown when the user clicks the extension icon
+    "default_title": "My YT Bookmarks",
+    "default_popup": "popup.html"
   },
-  "manifest_version": 3  // Ensure the manifest version is 3 for modern Chrome extensions
+  "manifest_version": 3
 }
