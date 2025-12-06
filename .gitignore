@@ -1,0 +1,46 @@
+# -----------------------------
+# Node / Dependency Files
+# -----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# -----------------------------
+# Build Output (TypeScript)
+# -----------------------------
+dist/
+*.js.map
+*.tsbuildinfo
+
+# -----------------------------
+# Chrome Extension Build Artifacts
+# -----------------------------
+# zipped packages for Chrome Web Store
+*.zip
+
+# -----------------------------
+# Temporary / Cache Files
+# -----------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cache/
+.tmp/
+
+# -----------------------------
+# Environment / Private Files
+# -----------------------------
+.env
+.env.local
+.env.production
+.env.development
+
+# -----------------------------
+# Logs
+# -----------------------------
+logs/
+*.log

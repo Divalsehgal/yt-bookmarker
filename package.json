@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "@types/chrome": "^0.1.32",
+    "typescript": "^5.9.3",
+    "esbuild": "^0.20.0"
+  },
+  "scripts": {
+    "build": "yarn build:background && yarn build:content && yarn build:popup",
+    "build:background": "esbuild src/background/index.ts --bundle --outfile=dist/background/index.js --format=esm",
+    "build:content": "esbuild src/content/index.ts --bundle --outfile=dist/content/index.js --format=iife",
+    "build:popup": "esbuild src/popup/index.ts --bundle --outfile=dist/popup/index.js --format=iife",
+    "watch": "yarn build --watch"
+  }
+}
