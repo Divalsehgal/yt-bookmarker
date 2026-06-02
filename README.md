@@ -37,7 +37,7 @@ name: Release extension ZIP
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
   release:
