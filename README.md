@@ -21,6 +21,10 @@ yarn build
 
 Load the repository folder from `chrome://extensions` using **Load unpacked**. After rebuilding, press the extension card's reload button and refresh an open YouTube video.
 
+## Built ZIP Download
+
+A built extension ZIP is generated automatically on every push via GitHub Actions. After a push, open the repository's **Actions** tab, select the latest run, and download the `yt-bookmarker-build` artifact.
+
 ## How To Use
 
 1. Open a YouTube watch page.
