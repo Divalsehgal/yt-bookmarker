@@ -4,6 +4,7 @@ import { createBookmark } from "../core/bookmark";
 
 import {
     addBookmark,
+    addBookmarks,
     getBookmarks,
     updateBookmark,
     deleteBookmark,
@@ -56,6 +57,39 @@ chrome.runtime.onMessage.addListener(
                 });
 
             return true; // async
+        }
+
+        if (type === "ADD_HOT_MOMENTS") {
+            const { videoId, title, channel, moments } = message.payload;
+
+            if (!videoId || !moments.length) {
+                sendResponse({ ok: false, error: "NO_HOT_MOMENTS" });
+                return false;
+            }
+
+            const bookmarks = moments.map(({ time, score }, index) =>
+                createBookmark({
+                    videoId,
+                    time,
+                    title,
+                    channel,
+                    desc:
+                        index === 0
+                            ? "Most replayed moment"
+                            : `Hot moment ${index + 1}`,
+                    source: "hot-moment",
+                    score
+                })
+            );
+
+            addBookmarks(videoId, bookmarks)
+                .then((result) => sendResponse({ ok: true, ...result }))
+                .catch((err) => {
+                    console.error("ADD_HOT_MOMENTS error:", err);
+                    sendResponse({ ok: false, error: String(err) });
+                });
+
+            return true;
         }
 
         // ---------------------------

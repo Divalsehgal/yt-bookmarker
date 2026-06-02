@@ -46,6 +46,25 @@ export async function addBookmark(
     return updated;
 }
 
+export async function addBookmarks(
+    videoId: string,
+    bookmarks: Bookmark[]
+): Promise<{ bookmarks: Bookmark[]; added: number }> {
+    const current = await getBookmarks(videoId);
+    const additions = bookmarks.filter(
+        (candidate) =>
+            !current.some(
+                (bookmark) =>
+                    bookmark.source === candidate.source &&
+                    Math.abs(bookmark.time - candidate.time) < 5
+            )
+    );
+    const updated = [...current, ...additions].sort((a, b) => a.time - b.time);
+
+    await saveBookmarks(videoId, updated);
+    return { bookmarks: updated, added: additions.length };
+}
+
 // -----------------------------
 // Update an existing bookmark
 // -----------------------------

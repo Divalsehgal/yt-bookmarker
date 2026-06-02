@@ -1,6 +1,6 @@
 {
-  "name": "My YT Bookmarks",
-  "version": "0.3.0",
+  "name": "YT Bookmarker",
+  "version": "0.4.0",
   "manifest_version": 3,
 
   "permissions": ["storage", "tabs"],
@@ -21,7 +21,18 @@
 
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "My YT Bookmarks"
+    "default_title": "YT Bookmarker",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png"
+    }
+  },
+
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
   },
 
   "web_accessible_resources": [
@@ -30,7 +41,10 @@
         "assets/bookmark.png",
         "assets/play.png",
         "assets/delete.png",
-        "assets/ext-icon.png"
+        "assets/icon-16.png",
+        "assets/icon-32.png",
+        "assets/icon-48.png",
+        "assets/icon-128.png"
       ],
       "matches": ["https://*.youtube.com/*"]
     }

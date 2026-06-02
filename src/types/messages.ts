@@ -13,6 +13,19 @@ export type AddBookmarkMessage = {
     };
 };
 
+export type AddHotMomentsMessage = {
+    type: "ADD_HOT_MOMENTS";
+    payload: {
+        videoId: string;
+        title: string;
+        channel: string;
+        moments: Array<{
+            time: number;
+            score: number;
+        }>;
+    };
+};
+
 // GET_BOOKMARKS_FOR_VIDEO from popup
 export type GetBookmarksForVideoMessage = {
     type: "GET_BOOKMARKS_FOR_VIDEO";
@@ -39,6 +52,7 @@ export type GetAllVideosMessage = {
 
 export type BackgroundMessage =
     | AddBookmarkMessage
+    | AddHotMomentsMessage
     | GetBookmarksForVideoMessage
     | UpdateBookmarkMessage
     | DeleteBookmarkMessage

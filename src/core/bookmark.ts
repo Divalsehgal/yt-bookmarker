@@ -6,6 +6,8 @@ export interface Bookmark {
     channel: string;
     desc: string;
     createdAt: number;
+    source?: "manual" | "hot-moment";
+    score?: number;
 }
 
 interface CreateBookmarkParams {
@@ -14,6 +16,8 @@ interface CreateBookmarkParams {
     title: string;
     channel: string;
     desc?: string;
+    source?: "manual" | "hot-moment";
+    score?: number;
 }
 
 export function createBookmark({
@@ -21,7 +25,9 @@ export function createBookmark({
     time,
     title,
     channel,
-    desc = ""
+    desc = "",
+    source = "manual",
+    score
 }: CreateBookmarkParams): Bookmark {
     return {
         id: crypto.randomUUID(),
@@ -30,6 +36,8 @@ export function createBookmark({
         title,
         channel,
         desc,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        source,
+        score
     };
 }

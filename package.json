@@ -6,6 +6,8 @@
   },
   "scripts": {
     "build": "yarn build:background && yarn build:content && yarn build:popup",
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild tests/analyzer.test.ts --bundle --platform=node --format=cjs --outfile=/private/tmp/yt-bookmarker-analyzer.test.cjs && node --test /private/tmp/yt-bookmarker-analyzer.test.cjs",
     "build:background": "esbuild src/background/index.ts --bundle --outfile=dist/background/index.js --format=esm",
     "build:content": "esbuild src/content/index.ts --bundle --outfile=dist/content/index.js --format=iife",
     "build:popup": "esbuild src/popup/index.ts --bundle --outfile=dist/popup/index.js --format=iife",
