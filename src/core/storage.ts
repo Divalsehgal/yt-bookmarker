@@ -1,4 +1,4 @@
-import { Bookmark } from "./bookmark";
+import type { Bookmark } from "./bookmark";
 
 const STORAGE = chrome.storage.local;
 const KEY_PREFIX = "video:";

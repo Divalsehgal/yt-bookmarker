@@ -1,23 +1,237 @@
-
-
 import type { Bookmark } from "../core/bookmark";
+import type { TranscriptSection } from "../core/transcript";
 import { formatTime, getActiveTabURL, getVideoIdFromUrl } from "../utils";
 
-const bookmarksElement = document.getElementById(
-    "bookmarks"
-) as HTMLElement | null;
-const summaryElement = document.getElementById("summary");
+const bookmarksElement = document.getElementById("bookmarks") as HTMLElement | null;
+const transcriptElement = document.getElementById("transcript");
+const transcriptContentElement = document.getElementById("transcript-content");
+const copyTranscriptButton = document.getElementById("copy-transcript") as HTMLButtonElement | null;
+const bookmarksTab = document.getElementById("bookmarks-tab") as HTMLButtonElement | null;
+const transcriptTab = document.getElementById("transcript-tab") as HTMLButtonElement | null;
+const bookmarksPanel = document.getElementById("bookmarks-panel");
+const transcriptPanel = document.getElementById("transcript-panel");
 
-const controlIcons = {
-    play: `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M8.5 5.55a1 1 0 0 1 1.52-.85l9.14 6.12a1 1 0 0 1 0 1.66l-9.14 6.12a1 1 0 0 1-1.52-.83V5.55Z"/>
-        </svg>`,
-    delete: `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9.25 3.5a2.75 2.75 0 0 1 5.5 0h4a.75.75 0 0 1 0 1.5h-.83l-.69 14.42A2.7 2.7 0 0 1 14.53 22H9.47a2.7 2.7 0 0 1-2.7-2.58L6.08 5h-.83a.75.75 0 0 1 0-1.5h4Zm1.5 0h2.5a1.25 1.25 0 0 0-2.5 0Zm-3.17 1.5.69 14.35c.03.64.56 1.15 1.2 1.15h5.06c.64 0 1.17-.51 1.2-1.15L16.42 5H7.58Zm2.67 3a.75.75 0 0 1 .75.75v7.5a.75.75 0 0 1-1.5 0v-7.5a.75.75 0 0 1 .75-.75Zm3.5 0a.75.75 0 0 1 .75.75v7.5a.75.75 0 0 1-1.5 0v-7.5a.75.75 0 0 1 .75-.75Z"/>
-        </svg>`
+const transcriptSearchBox = document.getElementById("transcript-search-box");
+const transcriptSearchInput = document.getElementById("transcript-search") as HTMLInputElement | null;
+const exportBookmarksButton = document.getElementById("export-bookmarks") as HTMLButtonElement | null;
+
+let transcriptForCopy = "";
+let allTranscriptSections: TranscriptSection[] = [];
+let loadedBookmarks: Bookmark[] = [];
+let activeTabId: number | null = null;
+let activeVideoId: string = "";
+
+const icons = {
+    play: `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z"/></svg>`,
+    edit: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
+    delete: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
+    copy: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`
 };
+
+const copyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch {
+        const fallback = document.createElement("textarea");
+        fallback.value = text;
+        fallback.style.position = "fixed";
+        fallback.style.opacity = "0";
+        document.body.appendChild(fallback);
+        fallback.select();
+        const success = document.execCommand("copy");
+        fallback.remove();
+        return success;
+    }
+};
+
+const showPanel = (panel: "bookmarks" | "transcript"): void => {
+    const isBookmarks = panel === "bookmarks";
+    if (bookmarksPanel) bookmarksPanel.hidden = !isBookmarks;
+    if (transcriptPanel) transcriptPanel.hidden = isBookmarks;
+    bookmarksTab?.classList.toggle("ytb-tab--active", isBookmarks);
+    transcriptTab?.classList.toggle("ytb-tab--active", !isBookmarks);
+    bookmarksTab?.setAttribute("aria-selected", String(isBookmarks));
+    transcriptTab?.setAttribute("aria-selected", String(!isBookmarks));
+};
+
+bookmarksTab?.addEventListener("click", () => showPanel("bookmarks"));
+transcriptTab?.addEventListener("click", () => showPanel("transcript"));
+
+const showTranscriptFallback = (message: string): void => {
+    if (!transcriptContentElement || !transcriptElement) return;
+    transcriptContentElement.innerHTML = "";
+    if (transcriptSearchBox) transcriptSearchBox.hidden = true;
+    const fallback = document.createElement("div");
+    fallback.className = "ytb-transcript-fallback";
+    fallback.textContent = message;
+    transcriptContentElement.appendChild(fallback);
+    const subtitle = transcriptElement.querySelector(".ytb-section-subtitle");
+    if (subtitle) subtitle.textContent = "Captions are not available for this video.";
+    if (copyTranscriptButton) copyTranscriptButton.disabled = true;
+};
+
+const renderTranscript = (sections: TranscriptSection[], filterQuery = ""): void => {
+    if (!transcriptContentElement || !transcriptElement) return;
+    allTranscriptSections = sections;
+    if (transcriptSearchBox) transcriptSearchBox.hidden = false;
+
+    const query = filterQuery.trim().toLowerCase();
+    const filteredSections = query
+        ? sections.filter((s) => s.text.toLowerCase().includes(query))
+        : sections;
+
+    transcriptContentElement.innerHTML = "";
+    const subtitle = transcriptElement.querySelector(".ytb-section-subtitle");
+    if (subtitle) {
+        subtitle.textContent = query
+            ? `${filteredSections.length} of ${sections.length} sections found`
+            : `${sections.length} timestamped sections`;
+    }
+
+    transcriptForCopy = sections
+        .map((section) => `[${formatTime(section.start)}]\n${section.text}`)
+        .join("\n\n");
+
+    if (filteredSections.length === 0) {
+        const fallback = document.createElement("div");
+        fallback.className = "ytb-transcript-fallback";
+        fallback.textContent = `No transcript sections match "${filterQuery}".`;
+        transcriptContentElement.appendChild(fallback);
+        return;
+    }
+
+    filteredSections.forEach((section) => {
+        const item = document.createElement("article");
+        item.className = "ytb-transcript-section";
+
+        const header = document.createElement("div");
+        header.className = "ytb-transcript-section-header";
+
+        const timeBtn = document.createElement("button");
+        timeBtn.type = "button";
+        timeBtn.className = "ytb-transcript-time";
+        timeBtn.textContent = formatTime(section.start);
+        timeBtn.title = "Jump to " + formatTime(section.start);
+        timeBtn.setAttribute("aria-label", "Jump to " + formatTime(section.start));
+        timeBtn.addEventListener("click", () => {
+            if (activeTabId != null) {
+                chrome.tabs.sendMessage(activeTabId, { type: "PLAY", time: section.start });
+            }
+        });
+
+        const copySectionBtn = document.createElement("button");
+        copySectionBtn.type = "button";
+        copySectionBtn.className = "ytb-transcript-copy-btn";
+        copySectionBtn.title = "Copy section";
+        copySectionBtn.setAttribute("aria-label", "Copy section");
+        copySectionBtn.innerHTML = `${icons.copy}<span>Copy</span>`;
+        copySectionBtn.addEventListener("click", async () => {
+            const sectionText = `[${formatTime(section.start)}] ${section.text}`;
+            await copyToClipboard(sectionText);
+            copySectionBtn.innerHTML = `${icons.check}<span>Copied</span>`;
+            copySectionBtn.classList.add("ytb-copied");
+            window.setTimeout(() => {
+                copySectionBtn.innerHTML = `${icons.copy}<span>Copy</span>`;
+                copySectionBtn.classList.remove("ytb-copied");
+            }, 1400);
+        });
+
+        header.append(timeBtn, copySectionBtn);
+
+        const text = document.createElement("p");
+        text.className = "ytb-transcript-text";
+
+        if (query) {
+            const lowerText = section.text.toLowerCase();
+            const idx = lowerText.indexOf(query);
+            if (idx !== -1) {
+                const before = section.text.slice(0, idx);
+                const match = section.text.slice(idx, idx + query.length);
+                const after = section.text.slice(idx + query.length);
+                text.appendChild(document.createTextNode(before));
+                const mark = document.createElement("mark");
+                mark.className = "ytb-highlight";
+                mark.textContent = match;
+                text.appendChild(mark);
+                text.appendChild(document.createTextNode(after));
+            } else {
+                text.textContent = section.text;
+            }
+        } else {
+            text.textContent = section.text;
+        }
+
+        item.append(header, text);
+        transcriptContentElement.appendChild(item);
+    });
+
+    if (copyTranscriptButton) copyTranscriptButton.disabled = false;
+};
+
+transcriptSearchInput?.addEventListener("input", (e) => {
+    const query = (e.target as HTMLInputElement).value;
+    renderTranscript(allTranscriptSections, query);
+});
+
+exportBookmarksButton?.addEventListener("click", async () => {
+    if (!loadedBookmarks.length || !activeVideoId) {
+        exportBookmarksButton.classList.add("ytb-btn-disabled");
+        const originalText = exportBookmarksButton.innerHTML;
+        exportBookmarksButton.innerHTML = `<span>No bookmarks</span>`;
+        window.setTimeout(() => {
+            exportBookmarksButton.innerHTML = originalText;
+            exportBookmarksButton.classList.remove("ytb-btn-disabled");
+        }, 1400);
+        return;
+    }
+
+    const lines = loadedBookmarks.map((b) => {
+        const timeStr = formatTime(b.time);
+        const url = `https://youtu.be/${activeVideoId}?t=${b.time}`;
+        const title = b.desc || b.title;
+        return `- [${timeStr}](${url}) - ${title}`;
+    });
+
+    const exportText = `# YouTube Bookmarks (${activeVideoId})\n\n` + lines.join("\n");
+    await copyToClipboard(exportText);
+
+    const originalText = exportBookmarksButton.innerHTML;
+    exportBookmarksButton.innerHTML = `${icons.check}<span>Copied</span>`;
+    exportBookmarksButton.classList.add("ytb-copied");
+    window.setTimeout(() => {
+        exportBookmarksButton.innerHTML = originalText;
+        exportBookmarksButton.classList.remove("ytb-copied");
+    }, 1400);
+});
+
+const loadTranscript = (tabId: number): void => {
+    chrome.runtime.sendMessage({ type: "GET_CAPTION_TRACKS", tabId }, (trackResponse) => {
+        if (chrome.runtime.lastError || !trackResponse?.ok) {
+            showTranscriptFallback("YouTube did not provide a caption track for this video. AI transcription is needed to create one from the audio.");
+            return;
+        }
+
+        chrome.tabs.sendMessage(tabId, { type: "GET_TRANSCRIPT", tracks: trackResponse.tracks }, (res) => {
+            if (chrome.runtime.lastError || !res?.ok || !Array.isArray(res.sections)) {
+                showTranscriptFallback("YouTube did not provide a caption track for this video. AI transcription is needed to create one from the audio.");
+                return;
+            }
+            renderTranscript(res.sections as TranscriptSection[]);
+        });
+    });
+};
+
+copyTranscriptButton?.addEventListener("click", async () => {
+    if (!transcriptForCopy) return;
+    await copyToClipboard(transcriptForCopy);
+    const originalContent = copyTranscriptButton.innerHTML;
+    copyTranscriptButton.innerHTML = `${icons.check}<span>Copied</span>`;
+    window.setTimeout(() => {
+        copyTranscriptButton.innerHTML = originalContent;
+    }, 1400);
+});
 
 type PopupContext = {
     videoId: string;
@@ -31,107 +245,111 @@ const addNewBookmark = (
 ): void => {
     const { videoId, tabId } = context;
 
-    const newBookmarkElement = document.createElement("div");
-    newBookmarkElement.id = "bookmark-" + bookmark.id;
-    newBookmarkElement.className = "ytb-bookmark";
-    newBookmarkElement.setAttribute("data-id", bookmark.id);
-    newBookmarkElement.setAttribute("data-time", String(bookmark.time));
+    const bookmarkCard = document.createElement("div");
+    bookmarkCard.id = "bookmark-" + bookmark.id;
+    bookmarkCard.className = "ytb-bookmark-card";
+    bookmarkCard.setAttribute("data-id", bookmark.id);
+    bookmarkCard.setAttribute("data-time", String(bookmark.time));
 
-    // Top row container
-    const topRow = document.createElement("div");
-    topRow.className = "ytb-bookmark-top";
+    // Top Content row
+    const mainRow = document.createElement("div");
+    mainRow.className = "ytb-bookmark-main";
 
-    // Timestamp
-    const timestampElement = document.createElement("div");
-    timestampElement.textContent = formatTime(bookmark.time);
-    timestampElement.className = "ytb-bookmark-timestamp";
+    // Left info (timestamp + title)
+    const contentCol = document.createElement("div");
+    contentCol.className = "ytb-bookmark-content";
 
-    // Title
-    const bookmarkTitleElement = document.createElement("div");
-    bookmarkTitleElement.textContent = bookmark.desc || bookmark.title;
-    bookmarkTitleElement.className = "ytb-bookmark-title";
+    const metaRow = document.createElement("div");
+    metaRow.className = "ytb-bookmark-meta";
+
+    const timestampBtn = document.createElement("button");
+    timestampBtn.type = "button";
+    timestampBtn.textContent = formatTime(bookmark.time);
+    timestampBtn.className = "ytb-bookmark-time-btn";
+    timestampBtn.title = "Play from " + formatTime(bookmark.time);
+    timestampBtn.setAttribute("aria-label", "Play from " + formatTime(bookmark.time));
+    timestampBtn.addEventListener("click", (e) => onPlay(e, tabId));
+    metaRow.appendChild(timestampBtn);
 
     if (bookmark.source === "hot-moment") {
-        const hotMomentBadge = document.createElement("span");
-        hotMomentBadge.className = "ytb-hot-moment-badge";
-        hotMomentBadge.textContent = bookmark.score
+        const hotBadge = document.createElement("span");
+        hotBadge.className = "ytb-hot-badge";
+        hotBadge.textContent = bookmark.score
             ? `Hot Moment ${Math.round(bookmark.score * 100)}%`
             : "Hot Moment";
-        newBookmarkElement.appendChild(hotMomentBadge);
+        metaRow.appendChild(hotBadge);
     }
 
-    // Controls
-    const controlsElement = document.createElement("div");
-    controlsElement.className = "ytb-bookmark-controls";
+    const titleElement = document.createElement("div");
+    titleElement.textContent = bookmark.desc || bookmark.title;
+    titleElement.className = "ytb-bookmark-title";
+    titleElement.title = bookmark.desc || bookmark.title;
 
-    setBookmarkAttributes("play", (e) => onPlay(e, tabId), controlsElement);
-    setBookmarkAttributes("delete", (e) => onDelete(e, videoId, tabId), controlsElement);
+    contentCol.append(metaRow, titleElement);
 
-    // Assemble top row
-    topRow.appendChild(timestampElement);
-    topRow.appendChild(bookmarkTitleElement);
-    topRow.appendChild(controlsElement);
+    // Right action controls group
+    const actionsGroup = document.createElement("div");
+    actionsGroup.className = "ytb-bookmark-actions";
 
-    // Edit button
-    const editButton = document.createElement("button");
-    editButton.textContent = "Edit";
-    editButton.className = "ytb-edit-btn";
-    editButton.addEventListener("click", () =>
-        onEdit(bookmark, bookmarkTitleElement, context)
+    // Play action button
+    const playBtn = document.createElement("button");
+    playBtn.className = "ytb-action-btn ytb-action-btn--play";
+    playBtn.type = "button";
+    playBtn.title = "Play";
+    playBtn.setAttribute("aria-label", "Play video from timestamp");
+    playBtn.innerHTML = icons.play;
+    playBtn.addEventListener("click", (e) => onPlay(e, tabId));
+
+    // Edit action button
+    const editBtn = document.createElement("button");
+    editBtn.className = "ytb-action-btn ytb-action-btn--edit";
+    editBtn.type = "button";
+    editBtn.title = "Edit title";
+    editBtn.setAttribute("aria-label", "Edit bookmark title");
+    editBtn.innerHTML = icons.edit;
+    editBtn.addEventListener("click", () =>
+        onEdit(bookmark, titleElement, context)
     );
 
-    // Assemble bookmark
-    newBookmarkElement.appendChild(topRow);
-    newBookmarkElement.appendChild(editButton);
+    // Delete action button
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "ytb-action-btn ytb-action-btn--delete";
+    deleteBtn.type = "button";
+    deleteBtn.title = "Delete bookmark";
+    deleteBtn.setAttribute("aria-label", "Delete bookmark");
+    deleteBtn.innerHTML = icons.delete;
+    deleteBtn.addEventListener("click", (e) => onDelete(e, videoId, tabId));
 
-    container.appendChild(newBookmarkElement);
-};
+    actionsGroup.append(playBtn, editBtn, deleteBtn);
 
-const createSection = (
-    title: string,
-    subtitle: string,
-    count: number,
-    variant: "bookmarks" | "hot-moments"
-): HTMLElement => {
-    const section = document.createElement("section");
-    section.className = `ytb-section ytb-section--${variant}`;
-
-    const heading = document.createElement("div");
-    heading.className = "ytb-section-heading";
-
-    const copy = document.createElement("div");
-    copy.className = "ytb-section-copy";
-
-    const titleElement = document.createElement("h2");
-    titleElement.className = "ytb-section-title";
-    titleElement.textContent = title;
-
-    const subtitleElement = document.createElement("p");
-    subtitleElement.className = "ytb-section-subtitle";
-    subtitleElement.textContent = subtitle;
-
-    const countElement = document.createElement("span");
-    countElement.className = "ytb-section-count";
-    countElement.textContent = String(count);
-
-    copy.appendChild(titleElement);
-    copy.appendChild(subtitleElement);
-    heading.appendChild(copy);
-    heading.appendChild(countElement);
-    section.appendChild(heading);
-
-    return section;
+    mainRow.append(contentCol, actionsGroup);
+    bookmarkCard.appendChild(mainRow);
+    container.appendChild(bookmarkCard);
 };
 
 const appendSection = (
     container: HTMLElement,
     title: string,
-    subtitle: string,
     bookmarks: Bookmark[],
     context: PopupContext,
     variant: "bookmarks" | "hot-moments"
 ): void => {
-    const section = createSection(title, subtitle, bookmarks.length, variant);
+    const section = document.createElement("section");
+    section.className = `ytb-section ytb-section--${variant}`;
+
+    if (variant === "hot-moments" && bookmarks.length > 0) {
+        const heading = document.createElement("div");
+        heading.className = "ytb-section-heading";
+        const titleElement = document.createElement("h2");
+        titleElement.className = "ytb-section-title";
+        titleElement.textContent = title;
+        const countBadge = document.createElement("span");
+        countBadge.className = "ytb-section-count";
+        countBadge.textContent = String(bookmarks.length);
+        heading.append(titleElement, countBadge);
+        section.appendChild(heading);
+    }
+
     const list = document.createElement("div");
     list.className = "ytb-section-list";
 
@@ -140,12 +358,16 @@ const appendSection = (
             .slice()
             .sort((a, b) => a.time - b.time)
             .forEach((bookmark) => addNewBookmark(list, bookmark, context));
-    } else {
+    } else if (variant === "bookmarks") {
         const emptyState = document.createElement("div");
-        emptyState.className = "ytb-section-empty";
-        emptyState.textContent = variant === "hot-moments"
-            ? "No replay heat map is available for this video yet."
-            : "Use the bookmark icon in the player to save a timestamp.";
+        emptyState.className = "ytb-empty-state";
+        emptyState.innerHTML = `
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ytb-empty-icon" aria-hidden="true">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <p class="ytb-empty-title">No bookmarks yet</p>
+            <p class="ytb-empty-desc">Click the bookmark icon in the video player or press <kbd>Alt+B</kbd> to save a timestamp.</p>
+        `;
         list.appendChild(emptyState);
     }
 
@@ -160,6 +382,7 @@ const viewBookmarks = (
 ): void => {
     if (!bookmarksElement) return;
 
+    loadedBookmarks = currentBookmarks;
     bookmarksElement.innerHTML = "";
     const hotMoments = currentBookmarks.filter(
         (bookmark) => bookmark.source === "hot-moment"
@@ -168,29 +391,24 @@ const viewBookmarks = (
         (bookmark) => bookmark.source !== "hot-moment"
     );
 
-    if (summaryElement) {
-        summaryElement.textContent = currentBookmarks.length
-            ? `${savedBookmarks.length} saved · ${hotMoments.length} hot moment${hotMoments.length === 1 ? "" : "s"}`
-            : "Ready for your next bookmark";
-    }
-
     const context = { videoId, tabId };
     appendSection(
         bookmarksElement,
         "Saved Bookmarks",
-        "Your manually saved timestamps",
         savedBookmarks,
         context,
         "bookmarks"
     );
-    appendSection(
-        bookmarksElement,
-        "Hot Moments",
-        "Automatically extracted from replay activity",
-        hotMoments,
-        context,
-        "hot-moments"
-    );
+
+    if (hotMoments.length > 0) {
+        appendSection(
+            bookmarksElement,
+            "Hot Moments",
+            hotMoments,
+            context,
+            "hot-moments"
+        );
+    }
 };
 
 const onEdit = (
@@ -208,12 +426,13 @@ const onEdit = (
     bookmarkTitleElement.innerHTML = "";
     bookmarkTitleElement.appendChild(inputField);
     inputField.focus();
+    inputField.select();
 
     const originalText = bookmark.desc || bookmark.title;
 
     const saveEdit = (): void => {
         const newTitle = inputField.value.trim();
-        if (!newTitle) {
+        if (!newTitle || newTitle === originalText) {
             bookmarkTitleElement.textContent = originalText;
             return;
         }
@@ -229,36 +448,26 @@ const onEdit = (
                 bookmark: updatedBookmark
             },
             (res) => {
-                if (chrome.runtime.lastError) {
-                    console.warn(
-                        "UPDATE_BOOKMARK lastError:",
-                        chrome.runtime.lastError
-                    );
+                if (chrome.runtime.lastError || !res?.ok) {
                     bookmarkTitleElement.textContent = originalText;
                     return;
                 }
 
-                if (res?.ok) {
-                    bookmarkTitleElement.textContent = newTitle;
+                bookmarkTitleElement.textContent = newTitle;
+                bookmark.desc = newTitle;
 
-                    chrome.tabs.sendMessage(
-                        tabId,
-                        {
-                            type: "SHOW_TOAST",
-                            message: "Bookmark updated"
-                        },
-                        () => {
-                            if (chrome.runtime.lastError) {
-                                console.warn(
-                                    "SHOW_TOAST (updated) lastError:",
-                                    chrome.runtime.lastError
-                                );
-                            }
+                chrome.tabs.sendMessage(
+                    tabId,
+                    {
+                        type: "SHOW_TOAST",
+                        message: "Bookmark updated"
+                    },
+                    () => {
+                        if (chrome.runtime.lastError) {
+                            // Ignored lastError on closed tab
                         }
-                    );
-                } else {
-                    bookmarkTitleElement.textContent = originalText;
-                }
+                    }
+                );
             }
         );
     };
@@ -277,10 +486,7 @@ const onEdit = (
 
 const onPlay = (e: Event, tabId: number): void => {
     const target = e.target as HTMLElement | null;
-    const bookmarkElement = target?.closest(".ytb-bookmark") as
-        | HTMLElement
-        | null;
-
+    const bookmarkElement = target?.closest(".ytb-bookmark-card") as HTMLElement | null;
     if (!bookmarkElement) return;
 
     const bookmarkTime = Number(bookmarkElement.getAttribute("data-time"));
@@ -294,7 +500,7 @@ const onPlay = (e: Event, tabId: number): void => {
         },
         () => {
             if (chrome.runtime.lastError) {
-                console.warn("PLAY lastError:", chrome.runtime.lastError);
+                // Ignore tab error
             }
         }
     );
@@ -302,9 +508,7 @@ const onPlay = (e: Event, tabId: number): void => {
 
 const onDelete = (e: Event, videoId: string, tabId: number): void => {
     const target = e.target as HTMLElement | null;
-    const bookmarkElement = target?.closest(".ytb-bookmark") as
-        | HTMLElement
-        | null;
+    const bookmarkElement = target?.closest(".ytb-bookmark-card") as HTMLElement | null;
     if (!bookmarkElement) return;
 
     const bookmarkId = bookmarkElement.getAttribute("data-id");
@@ -317,51 +521,26 @@ const onDelete = (e: Event, videoId: string, tabId: number): void => {
             bookmarkId
         },
         (res) => {
-            if (chrome.runtime.lastError) {
-                console.warn(
-                    "DELETE_BOOKMARK lastError:",
-                    chrome.runtime.lastError
-                );
+            if (chrome.runtime.lastError || !res?.ok) {
                 return;
             }
 
-            if (res?.ok) {
-                viewBookmarks(res.bookmarks || [], videoId, tabId);
+            viewBookmarks(res.bookmarks || [], videoId, tabId);
 
-                chrome.tabs.sendMessage(
-                    tabId,
-                    {
-                        type: "SHOW_TOAST",
-                        message: "Bookmark deleted"
-                    },
-                    () => {
-                        if (chrome.runtime.lastError) {
-                            console.warn(
-                                "SHOW_TOAST (deleted) lastError:",
-                                chrome.runtime.lastError
-                            );
-                        }
+            chrome.tabs.sendMessage(
+                tabId,
+                {
+                    type: "SHOW_TOAST",
+                    message: "Bookmark deleted"
+                },
+                () => {
+                    if (chrome.runtime.lastError) {
+                        // Ignore tab error
                     }
-                );
-            }
+                }
+            );
         }
     );
-};
-
-const setBookmarkAttributes = (
-    src: "play" | "delete",
-    eventListener: (e: Event) => void,
-    controlParentElement: HTMLElement
-): void => {
-    const controlElement = document.createElement("button");
-    controlElement.className = `ytb-control control-${src}`;
-    controlElement.type = "button";
-    controlElement.title = src === "play" ? "Play from here" : "Delete bookmark";
-    controlElement.setAttribute("aria-label", controlElement.title);
-    controlElement.innerHTML = controlIcons[src];
-    controlElement.addEventListener("click", eventListener);
-
-    controlParentElement.appendChild(controlElement);
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -369,17 +548,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const activeTab = await getActiveTabURL();
     if (!activeTab?.url || activeTab.id == null) {
-        bookmarksElement.innerHTML =
-            '<div class="row">No active tab found.</div>';
+        bookmarksElement.innerHTML = '<div class="ytb-empty-state"><p class="ytb-empty-title">No active tab found</p></div>';
+        showTranscriptFallback("Open a YouTube video to load its transcript.");
         return;
     }
 
+    activeTabId = activeTab.id;
     const videoId = getVideoIdFromUrl(activeTab.url);
     if (!activeTab.url.includes("youtube.com/watch") || !videoId) {
-        bookmarksElement.innerHTML =
-            '<div class="row">Open a YouTube video to start bookmarking.</div>';
+        bookmarksElement.innerHTML = '<div class="ytb-empty-state"><p class="ytb-empty-title">Open YouTube</p><p class="ytb-empty-desc">Open any YouTube video to start bookmarking timestamps.</p></div>';
+        showTranscriptFallback("Open a YouTube video to load its transcript.");
         return;
     }
+
+    activeVideoId = videoId;
+    loadTranscript(activeTab.id);
 
     chrome.runtime.sendMessage(
         {
@@ -387,17 +570,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             videoId
         },
         (res) => {
-            if (chrome.runtime.lastError) {
-                console.warn(
-                    "GET_BOOKMARKS_FOR_VIDEO lastError:",
-                    chrome.runtime.lastError
-                );
-                bookmarksElement.innerHTML =
-                    '<div class="row">Could not load bookmarks.</div>';
-                return;
-            }
-
-            if (!res?.ok) {
+            if (chrome.runtime.lastError || !res?.ok) {
                 viewBookmarks([], videoId, activeTab.id!);
                 return;
             }

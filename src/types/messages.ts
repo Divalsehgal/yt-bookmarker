@@ -32,6 +32,11 @@ export type GetBookmarksForVideoMessage = {
     videoId: string;
 };
 
+export type GetCaptionTracksMessage = {
+    type: "GET_CAPTION_TRACKS";
+    tabId: number;
+};
+
 // UPDATE_BOOKMARK from popup
 export type UpdateBookmarkMessage = {
     type: "UPDATE_BOOKMARK";
@@ -51,9 +56,4 @@ export type GetAllVideosMessage = {
 };
 
 export type BackgroundMessage =
-    | AddBookmarkMessage
-    | AddHotMomentsMessage
-    | GetBookmarksForVideoMessage
-    | UpdateBookmarkMessage
-    | DeleteBookmarkMessage
-    | GetAllVideosMessage;
+    AddBookmarkMessage | AddHotMomentsMessage | DeleteBookmarkMessage | GetAllVideosMessage | GetBookmarksForVideoMessage | GetCaptionTracksMessage | UpdateBookmarkMessage;

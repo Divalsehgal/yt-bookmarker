@@ -1,11 +1,12 @@
-# YT Bookmarker
+# YT Utility
 
-A Chrome extension for saving YouTube timestamps and extracting replay-based Hot Moments from videos that expose YouTube's heat map.
+A Chrome extension for saving YouTube timestamps, extracting replay-based Hot Moments, and copying timestamped video transcripts.
 
 ## Features
 
 - Save the current timestamp from the YouTube player.
 - Automatically extract up to five Hot Moments after YouTube's replay heat map loads.
+- Automatically load available video captions into copyable, one-minute transcript sections when the popup opens.
 - Jump directly to a saved moment from the extension popup.
 - Edit descriptions and delete bookmarks.
 - Avoid duplicate Hot Moments when extraction is run more than once.
@@ -15,6 +16,7 @@ A Chrome extension for saving YouTube timestamps and extracting replay-based Hot
 
 ```bash
 yarn install
+yarn lint
 yarn typecheck
 yarn build
 ```
@@ -77,7 +79,8 @@ Now when you push a tag such as `git tag v1.0.0 && git push origin v1.0.0`, GitH
 1. Open a YouTube watch page.
 2. Use the bookmark icon in the player to save the current timestamp.
 3. Hot Moments are saved automatically when a replay heat map is available.
-4. Open the extension popup to play, edit, or delete saved moments.
+4. Open the extension popup: the transcript loads automatically when captions are available. Use **Copy all** to copy its timestamped sections.
+5. Use the popup to play, edit, or delete saved moments.
 
 See [DEVELOPMENT.md](./DEVELOPMENT.md) for the architecture and implementation guide.
 For a blog-ready walkthrough, open [docs/YT-Bookmarker-Blog-Guide.docx](./docs/YT-Bookmarker-Blog-Guide.docx).

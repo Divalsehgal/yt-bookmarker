@@ -4,26 +4,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YT Bookmarker</title>
+    <title>YT Utility</title>
     <link rel="stylesheet" href="../styles.css">
 </head>
 
-<body>
+<body class="ytb-popup-body">
     <div class="ytb-container">
-        <div class="ytb-header">
-            <h1 class="ytb-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
-                    style="vertical-align: middle; margin-right: 8px;">
+        <header class="ytb-header">
+            <div class="ytb-brand">
+                <svg class="ytb-brand-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
                     <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
                 </svg>
-                YT Bookmarker
-            </h1>
-            <p class="ytb-subtitle">Save the moments worth returning to.</p>
-            <div class="ytb-summary" id="summary">Ready for your next bookmark</div>
-        </div>
-        <div class="ytb-bookmarks" id="bookmarks">
-            <!-- Bookmarks will be dynamically inserted here -->
-        </div>
+                <span class="ytb-brand-title">YT Utility</span>
+            </div>
+            <div class="ytb-header-actions">
+                <button class="ytb-header-btn" id="export-bookmarks" type="button" title="Export Bookmarks as Markdown" aria-label="Export Bookmarks as Markdown">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span>Export</span>
+                </button>
+            </div>
+        </header>
+
+        <nav class="ytb-tabs" role="tablist" aria-label="YT Utility views">
+            <button class="ytb-tab ytb-tab--active" id="bookmarks-tab" type="button" role="tab"
+                aria-selected="true" aria-controls="bookmarks-panel">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                    <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                </svg>
+                <span>Bookmarks</span>
+            </button>
+            <button class="ytb-tab" id="transcript-tab" type="button" role="tab"
+                aria-selected="false" aria-controls="transcript-panel">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-9 4H5v2h6V8zm7 8H5v-2h13v2zm0-4H5v-2h13v2z"/>
+                </svg>
+                <span>Transcript</span>
+            </button>
+        </nav>
+
+        <main class="ytb-main">
+            <section class="ytb-panel" id="bookmarks-panel" role="tabpanel" aria-labelledby="bookmarks-tab">
+                <div class="ytb-bookmarks" id="bookmarks">
+                    <!-- Bookmarks will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <section class="ytb-panel" id="transcript-panel" role="tabpanel" aria-labelledby="transcript-tab" hidden>
+                <div id="transcript" aria-live="polite">
+                    <div class="ytb-transcript-toolbar">
+                        <div class="ytb-search-box" id="transcript-search-box" hidden>
+                            <svg class="ytb-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="search" class="ytb-search-input" id="transcript-search" placeholder="Search transcript..." aria-label="Search transcript" />
+                        </div>
+                        <button class="ytb-copy-transcript" id="copy-transcript" type="button" title="Copy entire transcript" disabled>
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                            <span>Copy all</span>
+                        </button>
+                    </div>
+                    <div class="ytb-transcript-meta">
+                        <p class="ytb-section-subtitle">Loading captions from this video…</p>
+                    </div>
+                    <div class="ytb-transcript-content" id="transcript-content">
+                        <div class="ytb-transcript-loading"><span></span> Loading transcript…</div>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
     <script src="../dist/popup/index.js"></script>
 </body>

@@ -1,6 +1,6 @@
-import type { HeatMapChapter, Peak } from "../core/analyzer";
-import { extractHeatMapPeaks, normalizeChapterLayout } from "../core/analyzer";
 import { formatTime } from "../utils";
+import { getHeatMapPeaks } from "./heat-map";
+import { type CaptionTrack, fetchTranscript, readTranscriptFromPage } from "./transcript";
 
 (() => {
   let youtubePlayer: HTMLVideoElement | null = null;
@@ -84,57 +84,10 @@ import { formatTime } from "../utils";
     showToast(response?.ok ? `Bookmark saved at ${formatTime(time)}` : "Could not save bookmark");
   };
 
-  const getHeatMapPeaks = (): Peak[] => {
-    if (!youtubePlayer || !Number.isFinite(youtubePlayer.duration)) return [];
-
-    const container = document.querySelector(".ytp-heat-map-container") as HTMLElement | null;
-    if (!container) return [];
-
-    const areas = Array.from(container.querySelectorAll<HTMLElement>(".ytp-heat-map-chapter"));
-    const searchAreas: HTMLElement[] = areas.length ? areas : [container];
-    const containerRect = container.getBoundingClientRect();
-    const layouts = searchAreas.map((area) => {
-      const areaRect = area.getBoundingClientRect();
-      return {
-        left: areaRect.width
-          ? areaRect.left - containerRect.left
-          : Number.parseFloat(area.style.left) || 0,
-        width: areaRect.width || Number.parseFloat(area.style.width) || 0
-      };
-    });
-    const ratios = normalizeChapterLayout(layouts, containerRect.width);
-
-    const chapters = searchAreas.flatMap<HeatMapChapter>((area, index) => {
-      const path =
-        area.querySelector<SVGPathElement>("path.ytp-modern-heat-map") ||
-        Array.from(area.querySelectorAll<SVGPathElement>("path.ytp-heat-map-path"))
-          .find((candidate) => Boolean(candidate.getAttribute("d")));
-      const svg = path?.closest("svg");
-      const pathData = path?.getAttribute("d");
-
-      if (!svg || !pathData) return [];
-
-      const viewBox = svg.getAttribute("viewBox")?.trim().split(/\s+/).map(Number);
-      const svgWidth = svg.viewBox.baseVal.width || viewBox?.[2] || 1000;
-      const svgHeight = svg.viewBox.baseVal.height || viewBox?.[3] || 100;
-      const ratio = ratios[index] || { leftRatio: 0, widthRatio: 1 };
-
-      return [{
-        pathData,
-        svgWidth,
-        svgHeight,
-        leftRatio: ratio.leftRatio,
-        widthRatio: ratio.widthRatio
-      }];
-    });
-
-    return extractHeatMapPeaks(chapters, youtubePlayer.duration);
-  };
-
   const extractHighlights = async (automatic = false): Promise<boolean> => {
     if (!youtubePlayer || !currentVideoId) return false;
 
-    const moments = getHeatMapPeaks();
+    const moments = getHeatMapPeaks(youtubePlayer);
     if (!moments.length) {
       if (!automatic) showToast("Hot Moments are not available for this video yet");
       return false;
@@ -277,9 +230,20 @@ import { formatTime } from "../utils";
     childList: true,
     subtree: true
   });
+  window.addEventListener("keydown", (event: KeyboardEvent) => {
+    if (event.altKey && (event.key === "b" || event.key === "B" || event.code === "KeyB")) {
+      const activeTag = (document.activeElement?.tagName || "").toLowerCase();
+      if (activeTag === "input" || activeTag === "textarea" || (document.activeElement as HTMLElement)?.isContentEditable) {
+        return;
+      }
+      event.preventDefault();
+      void saveManualBookmark();
+    }
+  });
+
   syncVideo();
 
-  chrome.runtime.onMessage.addListener((message) => {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === "NEW") {
       currentVideoId = message.videoId;
       extractedVideoId = "";
@@ -292,6 +256,12 @@ import { formatTime } from "../utils";
       void youtubePlayer.play();
     } else if (message.type === "SHOW_TOAST" && message.message) {
       showToast(message.message);
+    } else if (message.type === "GET_TRANSCRIPT") {
+      void fetchTranscript((message.tracks || []) as CaptionTrack[])
+        .then(async (result) => result.ok ? result : readTranscriptFromPage())
+        .then(sendResponse);
+      return true;
     }
+    return undefined;
   });
 })();

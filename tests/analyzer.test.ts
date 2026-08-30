@@ -7,6 +7,7 @@ import {
   normalizeChapterLayout,
   parseSvgPath
 } from "../src/core/analyzer";
+import { parseTranscriptJson } from "../src/core/transcript";
 
 const SAMPLE_PATH =
   "M 0,100 C 10,90 20,15 30,10 C 40,15 50,90 60,100 " +
@@ -17,6 +18,21 @@ const YOUTUBE_PATH_FIXTURE =
   "C 19.0,96.2 21.0,81.5 25.0,73.2 " +
   "C 29.0,64.9 31.0,51.2 35.0,48.0 " +
   "C 39.0,44.9 41.0,55.0 45.0,57.5";
+
+test("parseTranscriptJson groups caption events into timestamped sections", () => {
+  const sections = parseTranscriptJson(JSON.stringify({
+    events: [
+      { tStartMs: 2_000, segs: [{ utf8: "Welcome   to the video." }] },
+      { tStartMs: 58_000, segs: [{ utf8: "This is the first minute." }] },
+      { tStartMs: 64_000, segs: [{ utf8: "Here is the next section." }] }
+    ]
+  }));
+
+  assert.deepEqual(sections, [
+    { start: 0, text: "Welcome to the video. This is the first minute." },
+    { start: 60, text: "Here is the next section." }
+  ]);
+});
 
 test("parseSvgPath captures cubic curve endpoints", () => {
   assert.deepEqual(parseSvgPath(SAMPLE_PATH), [

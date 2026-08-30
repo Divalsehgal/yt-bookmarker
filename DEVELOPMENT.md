@@ -1,12 +1,16 @@
-# YT Bookmarker: Implementation Guide
+# YT Utility: Implementation Guide
 
 ## Overview
 
-YT Bookmarker is a Manifest V3 Chrome extension written in TypeScript and bundled with esbuild. It has three runtime surfaces:
+YT Utility is a Manifest V3 Chrome extension written in TypeScript and bundled with esbuild. It has three runtime surfaces:
 
 1. The content script injects actions into the YouTube player.
 2. The background service worker handles storage operations.
 3. The popup lists bookmarks for the active YouTube video.
+
+## Code Quality
+
+Run `yarn lint` before committing. ESLint enforces sorted imports and exports, type-only imports, and a consistent ordering for TypeScript type constituents and class members. Use `yarn lint:fix` to apply safe fixes.
 
 ## Project Layout
 
@@ -47,6 +51,7 @@ The extractor does not depend on the progress bar being visible. For the usual s
 
 ```bash
 yarn typecheck
+yarn lint
 yarn test
 yarn build
 ```
@@ -70,4 +75,4 @@ python scripts/process_extension_icon.py SOURCE_IMAGE assets
 
 ## Notes For Publishing
 
-Before Chrome Web Store submission, prepare final store screenshots, a privacy policy explaining local-only storage, and production-sized icon variants. The extension currently requests `storage`, `tabs`, and YouTube host access only.
+Before Chrome Web Store submission, prepare final store screenshots, a privacy policy explaining local-only storage, and production-sized icon variants. The extension requests `storage`, `tabs`, `scripting`, and YouTube host access. The scripting permission reads the active YouTube player's caption metadata in the page's main execution world.

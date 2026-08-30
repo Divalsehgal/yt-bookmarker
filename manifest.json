@@ -1,9 +1,9 @@
 {
-  "name": "YT Bookmarker",
-  "version": "0.4.0",
+  "name": "YT Utility",
+  "version": "0.5.0",
   "manifest_version": 3,
 
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "scripting"],
   "host_permissions": ["https://*.youtube.com/*"],
 
   "background": {
@@ -21,7 +21,7 @@
 
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "YT Bookmarker",
+    "default_title": "YT Utility",
     "default_icon": {
       "16": "assets/icon-16.png",
       "32": "assets/icon-32.png"

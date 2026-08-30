@@ -8,67 +8,124 @@
     <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body>
+<body class="ytb-popup-body">
     <div class="ytb-container">
-        <div class="ytb-header">
-            <h1 class="ytb-title">YT Bookmarker</h1>
-            <p class="ytb-subtitle">Save the moments worth returning to.</p>
-            <div class="ytb-summary">2 saved · 2 hot moments</div>
-        </div>
-        <div class="ytb-bookmarks">
-            <section class="ytb-section ytb-section--bookmarks">
-                <div class="ytb-section-heading">
-                    <div class="ytb-section-copy">
-                        <h2 class="ytb-section-title">Saved Bookmarks</h2>
-                        <p class="ytb-section-subtitle">Your manually saved timestamps</p>
-                    </div>
-                    <span class="ytb-section-count">2</span>
-                </div>
-                <div class="ytb-section-list">
-                    <div class="ytb-bookmark">
-                        <div class="ytb-bookmark-top">
-                            <div class="ytb-bookmark-timestamp">02:14</div>
-                            <div class="ytb-bookmark-title">Key explanation of the implementation approach</div>
+        <header class="ytb-header">
+            <div class="ytb-brand">
+                <svg class="ytb-brand-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+                    <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+                </svg>
+                <span class="ytb-brand-title">YT Utility</span>
+            </div>
+            <div class="ytb-header-actions">
+                <button class="ytb-header-btn" id="export-bookmarks" type="button" title="Export Bookmarks as Markdown">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span>Export</span>
+                </button>
+            </div>
+        </header>
+
+        <nav class="ytb-tabs" role="tablist">
+            <button class="ytb-tab ytb-tab--active" type="button" role="tab">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                </svg>
+                <span>Bookmarks</span>
+            </button>
+            <button class="ytb-tab" type="button" role="tab">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-9 4H5v2h6V8zm7 8H5v-2h13v2zm0-4H5v-2h13v2z"/>
+                </svg>
+                <span>Transcript</span>
+            </button>
+        </nav>
+
+        <main class="ytb-main">
+            <section class="ytb-panel">
+                <div class="ytb-bookmarks">
+                    <div class="ytb-section-list">
+                        <div class="ytb-bookmark-card">
+                            <div class="ytb-bookmark-main">
+                                <div class="ytb-bookmark-content">
+                                    <div class="ytb-bookmark-meta">
+                                        <button class="ytb-bookmark-time-btn">02:14</button>
+                                    </div>
+                                    <div class="ytb-bookmark-title">Key explanation of the implementation approach</div>
+                                </div>
+                                <div class="ytb-bookmark-actions">
+                                    <button class="ytb-action-btn ytb-action-btn--play" title="Play">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z"/></svg>
+                                    </button>
+                                    <button class="ytb-action-btn ytb-action-btn--edit" title="Edit">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                    </button>
+                                    <button class="ytb-action-btn ytb-action-btn--delete" title="Delete">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <button class="ytb-edit-btn">Edit</button>
-                    </div>
-                    <div class="ytb-bookmark">
-                        <div class="ytb-bookmark-top">
-                            <div class="ytb-bookmark-timestamp">08:37</div>
-                            <div class="ytb-bookmark-title">Useful reference for the final walkthrough</div>
+
+                        <div class="ytb-bookmark-card">
+                            <div class="ytb-bookmark-main">
+                                <div class="ytb-bookmark-content">
+                                    <div class="ytb-bookmark-meta">
+                                        <button class="ytb-bookmark-time-btn">08:37</button>
+                                    </div>
+                                    <div class="ytb-bookmark-title">Useful reference for the final walkthrough</div>
+                                </div>
+                                <div class="ytb-bookmark-actions">
+                                    <button class="ytb-action-btn ytb-action-btn--play" title="Play">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z"/></svg>
+                                    </button>
+                                    <button class="ytb-action-btn ytb-action-btn--edit" title="Edit">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                    </button>
+                                    <button class="ytb-action-btn ytb-action-btn--delete" title="Delete">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <button class="ytb-edit-btn">Edit</button>
                     </div>
+
+                    <section class="ytb-section ytb-section--hot-moments">
+                        <div class="ytb-section-heading">
+                            <h2 class="ytb-section-title">Hot Moments</h2>
+                            <span class="ytb-section-count">2</span>
+                        </div>
+                        <div class="ytb-section-list">
+                            <div class="ytb-bookmark-card">
+                                <div class="ytb-bookmark-main">
+                                    <div class="ytb-bookmark-content">
+                                        <div class="ytb-bookmark-meta">
+                                            <button class="ytb-bookmark-time-btn">04:52</button>
+                                            <span class="ytb-hot-badge">Hot Moment 96%</span>
+                                        </div>
+                                        <div class="ytb-bookmark-title">Most replayed moment</div>
+                                    </div>
+                                    <div class="ytb-bookmark-actions">
+                                        <button class="ytb-action-btn ytb-action-btn--play" title="Play">
+                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z"/></svg>
+                                        </button>
+                                        <button class="ytb-action-btn ytb-action-btn--edit" title="Edit">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                        </button>
+                                        <button class="ytb-action-btn ytb-action-btn--delete" title="Delete">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </section>
-            <section class="ytb-section ytb-section--hot-moments">
-                <div class="ytb-section-heading">
-                    <div class="ytb-section-copy">
-                        <h2 class="ytb-section-title">Hot Moments</h2>
-                        <p class="ytb-section-subtitle">Automatically extracted from replay activity</p>
-                    </div>
-                    <span class="ytb-section-count">2</span>
-                </div>
-                <div class="ytb-section-list">
-                    <div class="ytb-bookmark">
-                        <span class="ytb-hot-moment-badge">Hot Moment 96%</span>
-                        <div class="ytb-bookmark-top">
-                            <div class="ytb-bookmark-timestamp">04:52</div>
-                            <div class="ytb-bookmark-title">Most replayed moment</div>
-                        </div>
-                        <button class="ytb-edit-btn">Edit</button>
-                    </div>
-                    <div class="ytb-bookmark">
-                        <span class="ytb-hot-moment-badge">Hot Moment 82%</span>
-                        <div class="ytb-bookmark-top">
-                            <div class="ytb-bookmark-timestamp">11:03</div>
-                            <div class="ytb-bookmark-title">Hot moment 2</div>
-                        </div>
-                        <button class="ytb-edit-btn">Edit</button>
-                    </div>
-                </div>
-            </section>
-        </div>
+        </main>
     </div>
 </body>
 

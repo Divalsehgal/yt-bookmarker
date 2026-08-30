@@ -1,17 +1,84 @@
 // src/background/index.ts
 
 import { createBookmark } from "../core/bookmark";
-
 import {
     addBookmark,
     addBookmarks,
-    getBookmarks,
-    updateBookmark,
     deleteBookmark,
-    getAllVideos
-} from "../core/storage";
+    getAllVideos,
+    getBookmarks,
+    updateBookmark} from "../core/storage";
 import type { BackgroundMessage } from "../types/messages";
 import { getVideoIdFromUrl } from "../utils";
+
+type CaptionTrack = { baseUrl?: string; languageCode?: string };
+
+const readCaptionTracksFromPage = (): CaptionTrack[] => {
+    type PlayerCaptionTrack = {
+        baseUrl?: string;
+        kind?: string;
+        languageCode?: string;
+        vssId?: string;
+    };
+    type PlayerResponse = {
+        captions?: {
+            playerCaptionsTracklistRenderer?: { captionTracks?: PlayerCaptionTrack[] };
+        };
+        videoDetails?: { videoId?: string };
+    };
+    const player = document.querySelector("#movie_player") as (HTMLElement & {
+        getOption?: (module: string, option: string) => unknown;
+        getPlayerResponse?: () => PlayerResponse;
+        getVideoData?: () => { video_id?: string };
+    }) | null;
+    const playerResponse = player?.getPlayerResponse?.() ||
+        (window as Window & { ytInitialPlayerResponse?: PlayerResponse }).ytInitialPlayerResponse;
+    const playerCaptionTracks = playerResponse?.captions
+        ?.playerCaptionsTracklistRenderer?.captionTracks || [];
+    const captionOption = player?.getOption?.("captions", "tracklist") as
+        PlayerCaptionTrack[] | { tracks?: PlayerCaptionTrack[] } | undefined;
+    const optionTracks = Array.isArray(captionOption)
+        ? captionOption
+        : captionOption?.tracks || [];
+    const videoId = playerResponse?.videoDetails?.videoId ||
+        player?.getVideoData?.().video_id ||
+        new URL(location.href).searchParams.get("v") || "";
+
+    const tracks: CaptionTrack[] = [];
+    for (const track of [...playerCaptionTracks, ...optionTracks]) {
+        if (track.baseUrl) {
+            tracks.push({ baseUrl: track.baseUrl, languageCode: track.languageCode });
+            continue;
+        }
+        if (!videoId || !track.languageCode) continue;
+
+        const url = new URL("/api/timedtext", location.origin);
+        url.searchParams.set("v", videoId);
+        url.searchParams.set("lang", track.languageCode);
+        if (track.kind === "asr" || track.vssId?.startsWith("a.")) {
+            url.searchParams.set("kind", "asr");
+        }
+        tracks.push({ baseUrl: url.toString(), languageCode: track.languageCode });
+    }
+
+    return tracks.filter((track, index) =>
+        tracks.findIndex((candidate) => candidate.baseUrl === track.baseUrl) === index
+    );
+};
+
+const getCaptionTracks = async (tabId: number): Promise<CaptionTrack[]> => {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+        const result = await chrome.scripting.executeScript({
+            target: { tabId },
+            world: "MAIN",
+            func: readCaptionTracksFromPage
+        });
+        const tracks = result[0]?.result || [];
+        if (tracks.length) return tracks;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    return [];
+};
 
 // Background message router
 chrome.runtime.onMessage.addListener(
@@ -21,6 +88,16 @@ chrome.runtime.onMessage.addListener(
         sendResponse: (response?: any) => void
     ) => {
         const { type } = message;
+
+        if (type === "GET_CAPTION_TRACKS") {
+            getCaptionTracks(message.tabId)
+                .then((tracks) => sendResponse({ ok: true, tracks }))
+                .catch((err) => {
+                    console.error("GET_CAPTION_TRACKS error:", err);
+                    sendResponse({ ok: false, error: String(err) });
+                });
+            return true;
+        }
 
         // ---------------------------
         // 1) ADD BOOKMARK
@@ -186,6 +263,10 @@ chrome.tabs.onUpdated.addListener(
         const videoId = getVideoIdFromUrl(tab.url);
         if (!videoId) return;
 
-        chrome.tabs.sendMessage(tabId, { type: "NEW", videoId });
+        chrome.tabs.sendMessage(tabId, { type: "NEW", videoId }, () => {
+            // YouTube can report the tab as complete just before the content script is
+            // attached. In that short window there is no receiving end yet.
+            void chrome.runtime.lastError;
+        });
     }
 );

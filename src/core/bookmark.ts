@@ -6,7 +6,7 @@ export interface Bookmark {
     channel: string;
     desc: string;
     createdAt: number;
-    source?: "manual" | "hot-moment";
+    source?: "hot-moment" | "manual";
     score?: number;
 }
 
@@ -16,7 +16,7 @@ interface CreateBookmarkParams {
     title: string;
     channel: string;
     desc?: string;
-    source?: "manual" | "hot-moment";
+    source?: "hot-moment" | "manual";
     score?: number;
 }
 
