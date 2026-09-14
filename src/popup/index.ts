@@ -130,11 +130,11 @@ const setFollowEnabled = (enabled: boolean, persist: boolean): void => {
     if (persist) chrome.storage.local.set({ [FOLLOW_PREFERENCE_KEY]: enabled });
 
     if (transcriptPanel?.hidden) return;
+    // Turning follow ON jumps to the current section and starts tracking playback.
+    // Turning it OFF just stops tracking in place - it must not re-jump, or the
+    // button would look like it does the same thing either way.
     if (enabled) startFollowing();
-    else {
-        stopFollowing();
-        updateActiveSection(true);
-    }
+    else stopFollowing();
 };
 
 followToggleButton?.addEventListener("click", () => setFollowEnabled(!followEnabled, true));
