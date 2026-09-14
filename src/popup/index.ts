@@ -62,15 +62,8 @@ const showPanel = (panel: "bookmarks" | "transcript"): void => {
     bookmarksTab?.setAttribute("aria-selected", String(isBookmarks));
     transcriptTab?.setAttribute("aria-selected", String(!isBookmarks));
 
-    if (isBookmarks) {
-        stopFollowing();
-    } else if (followEnabled) {
-        startFollowing();
-    } else {
-        // Not following by default, but still jump to wherever the video currently is
-        // so re-opening the panel doesn't mean scrolling to find your place again.
-        updateActiveSection(true);
-    }
+    if (isBookmarks) stopFollowing();
+    else if (followEnabled) startFollowing();
 };
 
 /** Finds the last section whose start time has already passed. Sections are sorted ascending. */
@@ -310,10 +303,7 @@ const loadTranscript = (tabId: number): void => {
                 return;
             }
             renderTranscript(res.sections as TranscriptSection[]);
-            if (!transcriptPanel?.hidden) {
-                if (followEnabled) startFollowing();
-                else updateActiveSection(true);
-            }
+            if (!transcriptPanel?.hidden && followEnabled) startFollowing();
         });
     });
 };
