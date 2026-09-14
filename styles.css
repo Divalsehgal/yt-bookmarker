@@ -528,8 +528,13 @@ body.ytb-popup-body {
 .ytb-transcript-toolbar {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: var(--ytb-space-4);
     margin-bottom: var(--ytb-space-4);
+}
+
+.ytb-transcript-toolbar .ytb-search-box {
+    min-width: 140px;
 }
 
 .ytb-search-box {
@@ -594,6 +599,40 @@ body.ytb-popup-body {
     cursor: default;
 }
 
+.ytb-follow-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ytb-space-2);
+    padding: var(--ytb-space-3) var(--ytb-space-5);
+    font-size: var(--ytb-font-size-sm);
+    font-weight: var(--ytb-font-weight-semibold);
+    font-family: var(--ytb-font-sans);
+    color: var(--ytb-color-text-secondary);
+    background: var(--ytb-color-bg-surface);
+    border: 1px solid var(--ytb-color-border-default);
+    border-radius: var(--ytb-radius-sm);
+    cursor: pointer;
+    transition: var(--ytb-transition);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ytb-follow-toggle:hover {
+    border-color: var(--ytb-color-success-base);
+    color: var(--ytb-color-success-base);
+}
+
+.ytb-follow-toggle--active {
+    color: var(--ytb-color-success-base);
+    background: var(--ytb-color-success-subtle);
+    border-color: var(--ytb-color-success-border);
+}
+
+.ytb-follow-toggle--active:hover {
+    background: var(--ytb-color-success-base);
+    color: var(--ytb-color-primary-contrast);
+}
+
 .ytb-transcript-meta {
     margin-bottom: var(--ytb-space-5);
 }
@@ -624,6 +663,18 @@ body.ytb-popup-body {
 .ytb-transcript-section:hover {
     border-color: var(--ytb-color-text-tertiary);
     background: var(--ytb-color-card-hover);
+}
+
+.ytb-transcript-section--active {
+    border-color: var(--ytb-color-success-base);
+    background: var(--ytb-color-success-subtle);
+    box-shadow: 0 0 0 1px var(--ytb-color-success-base);
+}
+
+.ytb-transcript-section--active .ytb-transcript-time {
+    color: var(--ytb-color-primary-contrast);
+    background: var(--ytb-color-success-base);
+    border-color: var(--ytb-color-success-base);
 }
 
 .ytb-transcript-section-header {

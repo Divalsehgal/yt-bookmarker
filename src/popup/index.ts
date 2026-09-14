@@ -14,12 +14,19 @@ const transcriptPanel = document.getElementById("transcript-panel");
 const transcriptSearchBox = document.getElementById("transcript-search-box");
 const transcriptSearchInput = document.getElementById("transcript-search") as HTMLInputElement | null;
 const exportBookmarksButton = document.getElementById("export-bookmarks") as HTMLButtonElement | null;
+const followToggleButton = document.getElementById("follow-toggle") as HTMLButtonElement | null;
+
+const FOLLOW_PREFERENCE_KEY = "ytbFollowTranscript";
+const FOLLOW_POLL_INTERVAL_MS = 800;
 
 let transcriptForCopy = "";
 let allTranscriptSections: TranscriptSection[] = [];
 let loadedBookmarks: Bookmark[] = [];
 let activeTabId: number | null = null;
 let activeVideoId: string = "";
+let followEnabled = false;
+let followTimer: number | null = null;
+let lastActiveSectionStart: number | null = null;
 
 const icons = {
     play: `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z"/></svg>`,
@@ -54,7 +61,83 @@ const showPanel = (panel: "bookmarks" | "transcript"): void => {
     transcriptTab?.classList.toggle("ytb-tab--active", !isBookmarks);
     bookmarksTab?.setAttribute("aria-selected", String(isBookmarks));
     transcriptTab?.setAttribute("aria-selected", String(!isBookmarks));
+
+    if (isBookmarks) {
+        stopFollowing();
+    } else if (followEnabled) {
+        startFollowing();
+    } else {
+        // Not following by default, but still jump to wherever the video currently is
+        // so re-opening the panel doesn't mean scrolling to find your place again.
+        updateActiveSection(true);
+    }
 };
+
+/** Finds the last section whose start time has already passed. Sections are sorted ascending. */
+const findActiveSectionStart = (sections: TranscriptSection[], currentTime: number): number | null => {
+    let active: number | null = null;
+    for (const section of sections) {
+        if (section.start > currentTime) break;
+        active = section.start;
+    }
+    return active;
+};
+
+const applyActiveHighlight = (start: number | null, scrollIntoView: boolean): void => {
+    if (!transcriptContentElement) return;
+    transcriptContentElement
+        .querySelectorAll<HTMLElement>(".ytb-transcript-section--active")
+        .forEach((el) => el.classList.remove("ytb-transcript-section--active"));
+
+    if (start === null) return;
+    const target = transcriptContentElement.querySelector<HTMLElement>(
+        `.ytb-transcript-section[data-start="${start}"]`
+    );
+    if (!target) return;
+
+    target.classList.add("ytb-transcript-section--active");
+    if (scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+const updateActiveSection = (forceScroll: boolean): void => {
+    if (activeTabId == null || !allTranscriptSections.length) return;
+    chrome.tabs.sendMessage(activeTabId, { type: "GET_CURRENT_TIME" }, (res) => {
+        if (chrome.runtime.lastError || !res?.ok) return;
+        const start = findActiveSectionStart(allTranscriptSections, Number(res.time) || 0);
+        const changed = start !== lastActiveSectionStart;
+        lastActiveSectionStart = start;
+        if (changed || forceScroll) applyActiveHighlight(start, true);
+    });
+};
+
+const startFollowing = (): void => {
+    stopFollowing();
+    updateActiveSection(true);
+    followTimer = window.setInterval(() => updateActiveSection(false), FOLLOW_POLL_INTERVAL_MS);
+};
+
+const stopFollowing = (): void => {
+    if (followTimer !== null) {
+        clearInterval(followTimer);
+        followTimer = null;
+    }
+};
+
+const setFollowEnabled = (enabled: boolean, persist: boolean): void => {
+    followEnabled = enabled;
+    followToggleButton?.classList.toggle("ytb-follow-toggle--active", enabled);
+    followToggleButton?.setAttribute("aria-pressed", String(enabled));
+    if (persist) chrome.storage.local.set({ [FOLLOW_PREFERENCE_KEY]: enabled });
+
+    if (transcriptPanel?.hidden) return;
+    if (enabled) startFollowing();
+    else {
+        stopFollowing();
+        updateActiveSection(true);
+    }
+};
+
+followToggleButton?.addEventListener("click", () => setFollowEnabled(!followEnabled, true));
 
 bookmarksTab?.addEventListener("click", () => showPanel("bookmarks"));
 transcriptTab?.addEventListener("click", () => showPanel("transcript"));
@@ -63,6 +146,8 @@ const showTranscriptFallback = (message: string): void => {
     if (!transcriptContentElement || !transcriptElement) return;
     transcriptContentElement.innerHTML = "";
     if (transcriptSearchBox) transcriptSearchBox.hidden = true;
+    if (followToggleButton) followToggleButton.hidden = true;
+    stopFollowing();
     const fallback = document.createElement("div");
     fallback.className = "ytb-transcript-fallback";
     fallback.textContent = message;
@@ -76,6 +161,7 @@ const renderTranscript = (sections: TranscriptSection[], filterQuery = ""): void
     if (!transcriptContentElement || !transcriptElement) return;
     allTranscriptSections = sections;
     if (transcriptSearchBox) transcriptSearchBox.hidden = false;
+    if (followToggleButton) followToggleButton.hidden = false;
 
     const query = filterQuery.trim().toLowerCase();
     const filteredSections = query
@@ -105,6 +191,7 @@ const renderTranscript = (sections: TranscriptSection[], filterQuery = ""): void
     filteredSections.forEach((section) => {
         const item = document.createElement("article");
         item.className = "ytb-transcript-section";
+        item.dataset.start = String(section.start);
 
         const header = document.createElement("div");
         header.className = "ytb-transcript-section-header";
@@ -168,6 +255,10 @@ const renderTranscript = (sections: TranscriptSection[], filterQuery = ""): void
     });
 
     if (copyTranscriptButton) copyTranscriptButton.disabled = false;
+
+    // Re-render (e.g. from a search keystroke) wipes the DOM nodes, so re-apply the
+    // last-known active section to the fresh markup without re-triggering a scroll.
+    applyActiveHighlight(lastActiveSectionStart, false);
 };
 
 transcriptSearchInput?.addEventListener("input", (e) => {
@@ -219,6 +310,10 @@ const loadTranscript = (tabId: number): void => {
                 return;
             }
             renderTranscript(res.sections as TranscriptSection[]);
+            if (!transcriptPanel?.hidden) {
+                if (followEnabled) startFollowing();
+                else updateActiveSection(true);
+            }
         });
     });
 };
@@ -545,6 +640,10 @@ const onDelete = (e: Event, videoId: string, tabId: number): void => {
 
 document.addEventListener("DOMContentLoaded", async () => {
     if (!bookmarksElement) return;
+
+    chrome.storage.local.get([FOLLOW_PREFERENCE_KEY], (res) => {
+        setFollowEnabled(Boolean(res?.[FOLLOW_PREFERENCE_KEY]), false);
+    });
 
     const activeTab = await getActiveTabURL();
     if (!activeTab?.url || activeTab.id == null) {

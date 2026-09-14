@@ -261,6 +261,8 @@ import { type CaptionTrack, fetchTranscript, readTranscriptFromPage } from "./tr
         .then(async (result) => result.ok ? result : readTranscriptFromPage())
         .then(sendResponse);
       return true;
+    } else if (message.type === "GET_CURRENT_TIME") {
+      sendResponse({ ok: !!youtubePlayer, time: youtubePlayer?.currentTime ?? 0 });
     }
     return undefined;
   });
